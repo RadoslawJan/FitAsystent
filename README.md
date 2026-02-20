@@ -1,1 +1,1 @@
-FitAsystent -  simple app for people who wanna stay fit
+##FitAsystent -  simple app for people who wanna stay fit
