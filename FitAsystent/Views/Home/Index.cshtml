@@ -35,6 +35,12 @@
         @if (Model.BMI > 0)
         {
             <div class="alert alert-info mt-4">
+                @if(ViewBag.Komunikat != null)
+                {
+                    <div class="alert alert-success text-center">
+                        <b>@ViewBag.Komunikat</b>
+                    </div>
+                }
                 <h4>Twoje wyniki</h4>
                 <p><b>BMI: </b> @Model.BMI (@Model.WynikBMI)</p>
                 <p><b>BMR (kalorie spoczynkowe): </b> @Model.ZapotrzebowanieKaloryczne</p>

@@ -4,6 +4,7 @@ using FitAsystent.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FitAsystent.Migrations
 {
     [DbContext(typeof(FitAsystentContext))]
-    partial class FitAsystentContextModelSnapshot : ModelSnapshot
+    [Migration("20260220164633_AddHealtRecordsTable")]
+    partial class AddHealtRecordsTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -22,7 +25,7 @@ namespace FitAsystent.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("FitAsystent.Models.HealthRecord", b =>
+            modelBuilder.Entity("FitAsystent.Models.HealthRecords", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -33,14 +36,12 @@ namespace FitAsystent.Migrations
                     b.Property<double>("BMI")
                         .HasColumnType("float");
 
-                    b.Property<DateTime>("DataPomiaru")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("Plec")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("UserId")
+                    b.Property<string>("UserID")
+                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<double>("Waga")
@@ -61,7 +62,7 @@ namespace FitAsystent.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserID");
 
                     b.ToTable("HealthRecords");
                 });
@@ -268,11 +269,13 @@ namespace FitAsystent.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("FitAsystent.Models.HealthRecord", b =>
+            modelBuilder.Entity("FitAsystent.Models.HealthRecords", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "User")
                         .WithMany()
-                        .HasForeignKey("UserId");
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });

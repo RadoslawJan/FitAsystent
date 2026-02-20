@@ -1,0 +1,100 @@
+﻿@model IEnumerable<FitAsystent.Models.HealthRecord>
+@{
+    ViewData["Title"] = "Mój dashboard";
+    var aktualnyStan = Model.Last();
+    string kolorRamki = "border-success";
+    string kolorTekstu = "text-success";
+    string kolorTla = "";
+    if(aktualnyStan.WynikBMI == "Niedowaga"){ kolorRamki = "border-info";kolorTekstu = "text-info"; }
+    else if (aktualnyStan.WynikBMI == "Waga prawidłowa") { kolorRamki = "border-success"; kolorTekstu = "text-success"; }
+    else if (aktualnyStan.WynikBMI == "Nadwaga") { kolorRamki = "border-warning"; kolorTekstu = "text-warning"; }
+    else if (aktualnyStan.WynikBMI == "Otyłość") { kolorRamki = "border-danger"; kolorTekstu = "text-danger"; kolorTla = "bg-danger bg-opacity-10"; }
+}
+<div class="text-center mb-5">
+	<h1 class="display-4">Twój panel!</h1>
+	<p class="text-muted">Śledź swoje postępy na bierząco</p>
+
+</div>
+<div class="row text-center mb-5">
+	<div class="col-md-4">
+		<div class=" card shadow-sm p-3 mb-3 border-primary">
+			<h5 class="text-muted">Obecna waga</h5>
+			<h2>@aktualnyStan.Waga</h2>
+		</div>
+
+	</div>
+	<div class="col-md-4">
+		<div class=" card shadow-sm p-3 mb-3 @kolorRamki @kolorTla">
+			<h5 class="text-muted">Twoje BMI</h5>
+			<h2 class="@kolorTekstu">@aktualnyStan.BMI <small class="text-muted">(@aktualnyStan.WynikBMI)</small></h2>
+		</div>
+	</div>
+	<div class="col-md-4">
+		<div class=" card shadow-sm p-3 mb-3 border-info">
+			<h5 class="text-muted">BMR (zapotrzebowanie kaloryczne)</h5>
+			<h2>@aktualnyStan.ZapotrzebowanieKaloryczne kcal</h2>
+		</div>
+	</div>
+</div>
+
+<div class="card shadow-sm p-4">
+	<h4>Historia pomiarów</h4>
+    <div style="height: 400px; width:100%;">
+        <canvas id="myChart" height="100"></canvas>
+    </div>
+	
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    const daty = @Html.Raw(Json.Serialize(Model.Select(r => r.DataPomiaru.ToString("dd.MM"))));
+    const wagi = @Html.Raw(Json.Serialize(Model.Select(r => r.Waga)));
+    const bmis = @Html.Raw(Json.Serialize(Model.Select(r => r.BMI)));
+
+    const ctx = document.getElementById('myChart');
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: daty, 
+            datasets: [
+                {
+                    label: 'Waga (kg)',
+                    data: wagi,
+                    borderColor: 'rgb(54, 162, 235)', // Niebieski
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    tension: 0.3, // Lekko zaokrąglone linie
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'BMI',
+                    data: bmis,
+                    borderColor: 'rgb(255, 99, 132)', // Czerwony
+                    backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                    tension: 0.3,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: { display: true, text: 'Waga (kg)' }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: { display: true, text: 'BMI' },
+                    grid: { drawOnChartArea: false } 
+                }
+            }
+        }
+    });
+</script>

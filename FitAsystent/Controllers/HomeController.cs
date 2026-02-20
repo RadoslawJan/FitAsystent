@@ -1,18 +1,42 @@
 using FitAsystent.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
+using FitAsystent.Data;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authorization;
 
 namespace FitAsystent.Controllers
 {
     public class HomeController : Controller
     {
+        private readonly FitAsystentContext _context;
+        private readonly UserManager<IdentityUser> _userManager;
+
+        public HomeController(FitAsystentContext context, UserManager<IdentityUser> userManager)
+        {
+            _context = context;
+            _userManager = userManager;
+        }
+
         [HttpGet]
         public IActionResult Index()
         {
-            return View(new HealthData());
+            var model = new HealthData();
+            if(User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                var userId = _userManager.GetUserId(User);
+                var lastRecord = _context.HealthRecords.Where(r => r.UserId == userId).OrderByDescending(r => r.DataPomiaru).FirstOrDefault();
+                if(lastRecord != null){
+                    model.Wzrost = lastRecord.Wzrost;
+                    model.Wiek = lastRecord.Wiek;
+                    model.Plec = lastRecord.Plec;
+                }
+            }
+
+            return View(model);
         }
         [HttpPost]
-        public IActionResult Index(HealthData model)
+        public async Task<IActionResult> Index(HealthData model)
         {
             double wzrostMetry = model.Wzrost / 100;
             if(wzrostMetry> 0)
@@ -34,7 +58,46 @@ namespace FitAsystent.Controllers
                 model.ZapotrzebowanieKaloryczne = 655.1 + (9.567 * model.Waga) + (1.81 * model.Wzrost) - (4.68 * model.Wiek);
             }
             model.ZapotrzebowanieKaloryczne = Math.Round(model.ZapotrzebowanieKaloryczne, 0);
+
+            if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                var userId = _userManager.GetUserId(User);
+                var newRecord = new HealthRecord
+                {
+                    UserId = userId,
+                    DataPomiaru = DateTime.Now,
+                    Waga = model.Waga,
+                    Wzrost = model.Wzrost,
+                    Wiek = model.Wiek,
+                    Plec = model.Plec,
+                    BMI = model.BMI,
+                    WynikBMI = model.WynikBMI,
+                    ZapotrzebowanieKaloryczne = model.ZapotrzebowanieKaloryczne
+                };
+                _context.HealthRecords.Add(newRecord);
+                await _context.SaveChangesAsync();
+                ViewBag.Komunikat = "Wyniki zostały zapisane!";
+
+            }
+            else
+            {
+                ViewBag.Komunikat = "Obliczono! Zaloguj by zapisać";
+            }
             return View(model);
+        }
+        [Authorize]
+        [HttpGet]
+        public IActionResult Dashboard()
+        {
+            var userId = _userManager.GetUserId(User);
+            var historia = _context.HealthRecords.Where(r => r.UserId == userId).OrderBy(r => r.DataPomiaru).ToList();
+            if(historia.Count() == 0)
+            {
+                ViewBag.Komunikat = "Najpierw wykonaj pomiar!";
+                return RedirectToAction("Index");
+
+            }
+            return View(historia);
         }
         public IActionResult Privacy()
         {
