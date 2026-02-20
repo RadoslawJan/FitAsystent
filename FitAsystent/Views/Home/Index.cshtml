@@ -1,0 +1,47 @@
+﻿@model FitAsystent.Models.HealthData
+@{
+    ViewData["Title"] = "Fit Kalkulatora";
+}
+
+<div class="text-center">
+    <h1 class="display-4">FitAsystent</h1>
+    <h2>Dla Ciebie</h2>
+    <p>Wporowadź swoje dane, aby otrzymać raport 😉</p>
+</div>
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <form asp-action="Index" method="post" class="card p-4 shadow-sm">
+            <div class="mb-3">
+                <label>Waga (kg): </label>
+                <input asp-for="Waga" class="form-control" type="number" step="0.1"/>
+            </div>
+            <div class="mb-3">
+                <label>Wzrost: </label>
+                <input asp-for="Wzrost" class="form-control" type="number" />
+            </div>
+            <div class="mb-3">
+                <label>Wiek: </label>
+                <input asp-for="Wiek" class="form-control" type="number" step="0.1" />
+            </div>
+            <div class="mb-3">
+                <label>Płeć: </label>
+                <select asp-for="Plec" class="form-control">
+                    <option value="Mężczyzna">Mężczyna</option>
+                    <option value="Kobieta">Kobieta</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-success w-100">Pokaż rezultat</button>
+        </form>
+        @if (Model.BMI > 0)
+        {
+            <div class="alert alert-info mt-4">
+                <h4>Twoje wyniki</h4>
+                <p><b>BMI: </b> @Model.BMI (@Model.WynikBMI)</p>
+                <p><b>BMR (kalorie spoczynkowe): </b> @Model.ZapotrzebowanieKaloryczne</p>
+
+            </div>
+        }
+
+    </div>
+
+</div>
