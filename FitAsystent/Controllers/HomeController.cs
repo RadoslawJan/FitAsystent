@@ -99,6 +99,69 @@ namespace FitAsystent.Controllers
             }
             return View(historia);
         }
+
+        [Authorize] // wyświetlanie
+        [HttpGet]
+        public IActionResult Historia() {             
+            var userId = _userManager.GetUserId(User);
+            var wpisy = _context.HealthRecords.Where(r => r.UserId == userId).OrderByDescending(r => r.DataPomiaru).ToList();
+            return View(wpisy);
+        }
+        [Authorize] // usuwanie 
+        [HttpPost]
+        public async Task<IActionResult> Usun(int id)
+        {
+            var userId = _userManager.GetUserId(User);
+            var wpis = _context.HealthRecords.FirstOrDefault(r => r.Id == id && r.UserId == userId);
+            if (wpis != null)
+            {
+                _context.HealthRecords.Remove(wpis);
+                await _context.SaveChangesAsync();
+            }
+            return RedirectToAction("Historia");
+        }
+        [Authorize] //wyświetlanie do edycji
+        [HttpGet]
+        public IActionResult Edytuj(int id)
+        {
+            var userId = _userManager.GetUserId(User);
+            var wpis = _context.HealthRecords.FirstOrDefault(r => r.Id == id && r.UserId == userId);
+            if (wpis == null) return Content("Znalazlem metode, ale nie znalazlem wpisu w bazie z tym ID!");
+            return View(wpis);
+        }
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> Edytuj(HealthRecord model)
+        {
+            var userId = _userManager.GetUserId(User);
+            var wpis = _context.HealthRecords.FirstOrDefault(r => r.Id == model.Id && r.UserId == userId);
+            if (wpis != null)
+            {
+                wpis.Waga = model.Waga;
+                wpis.Wzrost = model.Wzrost;
+                wpis.Wiek = model.Wiek;
+                wpis.Plec = model.Plec;
+                double wzrostMetry = wpis.Wzrost / 100.0;
+                if (wzrostMetry > 0) wpis.BMI = Math.Round(wpis.Waga / (wzrostMetry * wzrostMetry), 2);
+
+                if (wpis.BMI < 18.5) wpis.WynikBMI = "Niedowaga";
+                else if (wpis.BMI < 25) wpis.WynikBMI = "Waga prawidłowa";
+                else if (wpis.BMI < 30) wpis.WynikBMI = "Nadwaga";
+                else wpis.WynikBMI = "Otyłość";
+                if (model.Plec == "Mężczyzna")
+                {
+                    wpis.ZapotrzebowanieKaloryczne = 66.47 + (13.7 * model.Waga) + (5 * model.Wzrost) - (6.76 * model.Wiek);
+                }
+                else
+                {
+                    wpis.ZapotrzebowanieKaloryczne = 655.1 + (9.567 * model.Waga) + (1.81 * model.Wzrost) - (4.68 * model.Wiek);
+                }
+                wpis.ZapotrzebowanieKaloryczne = Math.Round(wpis.ZapotrzebowanieKaloryczne, 0);
+                await _context.SaveChangesAsync();
+            }
+            return RedirectToAction("Historia");
+        }
+            
         public IActionResult Privacy()
         {
             return View();
