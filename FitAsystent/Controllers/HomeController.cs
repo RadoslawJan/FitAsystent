@@ -4,6 +4,8 @@ using System.Diagnostics;
 using FitAsystent.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
+using System.Text.Json;
+using Google.GenAI;
 
 namespace FitAsystent.Controllers
 {
@@ -11,11 +13,13 @@ namespace FitAsystent.Controllers
     {
         private readonly FitAsystentContext _context;
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly IConfiguration _configuration;
 
-        public HomeController(FitAsystentContext context, UserManager<IdentityUser> userManager)
+        public HomeController(FitAsystentContext context, UserManager<IdentityUser> userManager, IConfiguration configuration)
         {
             _context = context;
             _userManager = userManager;
+            _configuration = configuration;
         }
 
         [HttpGet]
@@ -83,6 +87,7 @@ namespace FitAsystent.Controllers
             {
                 ViewBag.Komunikat = "Obliczono! Zaloguj by zapisać";
             }
+            ViewBag.PoradaAI = await PobierzPoradeAI(model);
             return View(model);
         }
         [Authorize]
@@ -171,6 +176,36 @@ namespace FitAsystent.Controllers
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+
+        private async Task<string> PobierzPoradeAI(HealthData model)
+        {
+            var apiKey = _configuration["GeminiApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                return "BŁĄD LOKALNY: Aplikacja nie pobrała klucza API. Sprawdź plik secrets.json.";
+            }
+            if (string.IsNullOrEmpty(apiKey)) return "Klucz api nie skonfigurowany";
+
+            string prompt = $"Jesteś profesjonalnym doradcą zdrowotnym. Użytkownik: {model.Plec}, wiek: {model.Wiek}, waga: {model.Waga}kg, wzrost: {model.Wzrost}cm, BMI: {model.BMI} ({model.WynikBMI}), dzienne zapotrzebowanie kaloryczne: {model.ZapotrzebowanieKaloryczne} kcal. Napisz krótką, zwięzłą poradę (maksymalnie 3 zdania) dotyczącą diety i aktywności fizycznej.";
+
+            try
+            {
+                var client = new Client(apiKey: apiKey);
+                var response = await client.Models.GenerateContentAsync(
+                    model: "gemini-2.5-flash",
+                    contents: prompt
+                );
+                if (response.Candidates != null && response.Candidates.Count > 0)
+                {
+                    return response.Candidates[0].Content?.Parts?[0].Text ?? "Brak tekstu w odpowiedzi.";
+                }
+                return "AI nie zwróciło wyniku";
+            }
+            catch(Exception e)
+            {
+                return $"błąd sdk: {e.Message}";
+            }
         }
     }
 }
